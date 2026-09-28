@@ -29,10 +29,12 @@ jobs:
 - **A job summary** with one row per file and every finding linked to its
   rule page (`https://labelixa.com/zpl/rules/<code>`), plus workflow
   annotations on the exact line.
-- **Before/after previews** on pull requests: the base commit's version of
-  each changed label next to the new one, as shareable preview links. This
-  needs the API's preview feature; when it is not available the summary
-  keeps the findings and the PNGs stay in the artifact.
+- **Before/after previews** on pull requests, **opt-in** (`previews: true`):
+  the base commit's version of each changed label next to the new one, as
+  shareable preview links. Off by default because a preview link stores the
+  label content on the API. This needs the API's preview feature; when it is
+  off or not available the summary keeps the findings and the PNGs stay in
+  the artifact.
 - **PNG artifact** (`labelixa-previews` by default) with one image per
   label, and the `before/` versions on pull requests.
 - **JSON report** (`labelixa-out/report.json`) — the CLI's `--json`
@@ -48,7 +50,7 @@ jobs:
 | `dpmm` | `8` | ZPL print density: 6, 8, 12 or 24. |
 | `width` / `height` | `4` / `6` | ZPL label size in inches. |
 | `render` | `true` | Render one PNG per label into `out-dir`. |
-| `previews` | `true` | Create shareable preview links for the summary. |
+| `previews` | `false` | Create shareable preview links for the summary. Uploads each label's content to the API, which stores it as a snippet. |
 | `badge` | `false` | Report the result to the Labelixa badge service (see Badges). |
 | `artifact` | `true` | Upload `out-dir` as a workflow artifact. |
 | `artifact-name` | `labelixa-previews` | Artifact name. |
@@ -115,7 +117,11 @@ Three options, from zero maintenance to live status:
   key at https://labelixa.com/panel and store it as a secret.
 - Nothing is sent anywhere but the API you configure; label code is not
   stored by the API when linting or rendering. Preview links are the one
-  exception: they store the label to serve the shared page — turn them off
-  with `previews: false` if your labels must not leave the job.
+  exception: they store the label to serve the shared page, so they are
+  off unless you set `previews: true`. Leave the default (`previews: false`)
+  if your labels must not leave the job.
+- Child processes are started without a shell on every runner, Windows
+  included: file globs and `cli-version` are passed as arguments and never
+  parsed as commands. `cli-version` must be a version or range.
 - Only what the renderer implements is previewed; the linter says so
   (`ZPL1002`) instead of guessing.

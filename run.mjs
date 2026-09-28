@@ -11,8 +11,10 @@
  * - No second HTTP layer for linting: the CLI is spawned (`npx labelixa@<v>`,
  *   or `LABELIXA_CLI_PATH` for local development and tests). Preview links
  *   are the only direct API calls (`POST /v1/snippets`) and they are
- *   optional: when the feature is not available the summary still has the
- *   findings, only without images.
+ *   opt-in (`previews: true`), because they store the label content on
+ *   the API as a shareable snippet: when the feature is off or not
+ *   available the summary still has the findings, only without images.
+ * - No shell: every child process gets its arguments as an array.
  * - "Before" previews come from git: on a pull request the base commit's
  *   version of each changed label is rendered next to the new one. A label
  *   that did not exist before is marked as new; nothing is guessed.
@@ -25,7 +27,7 @@
  *   2 usage error, 3 API or network error.
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 const env = process.env;
@@ -42,7 +44,10 @@ const dpmm = input("DPMM", "8") || "8";
 const width = input("WIDTH", "4") || "4";
 const height = input("HEIGHT", "6") || "6";
 const render = flag("RENDER", true);
-const previews = flag("PREVIEWS", true);
+// Off by default: a preview link uploads the label content to the API and
+// stores it as a shareable snippet. That is a data flow a workflow author
+// opts into, never one they inherit.
+const previews = flag("PREVIEWS", false);
 const badge = flag("BADGE", false);
 const outDir = input("OUT_DIR", "labelixa-out") || "labelixa-out";
 const cliVersion = input("CLI_VERSION", "0.3.0") || "0.3.0";
@@ -56,15 +61,38 @@ const BADGE_AUD = "labelixa.com";   // must match the API's LABELIXA_ROZET_AUD
 const EXIT = { OK: 0, FINDINGS: 1, USAGE: 2, API: 3 };
 
 // ------------------------------------------------------------------ cli
+// A version or range, never a URL, path or tarball spec: the value is
+// handed to npx as `labelixa@<cli-version>`.
+const CLI_VERSION_RE = /^[0-9A-Za-z.^~<>=*+-]{1,64}$/;
+
+/**
+ * How to run npx WITHOUT a shell.
+ *
+ * On Windows `npx` is a `.cmd` file and Node refuses to spawn one unless a
+ * shell is used; with a shell every argument (file globs, the CLI version)
+ * is parsed again by cmd.exe, so an input such as `a.zpl & calc` would run
+ * a command. Instead npm's own JavaScript entry point is run with the
+ * current Node binary: arguments travel as an array and nothing re-parses
+ * them.
+ */
+function npxCommand() {
+  if (process.platform !== "win32") return { file: "npx", pre: [] };
+  const npxCli = join(dirname(process.execPath), "node_modules", "npm", "bin", "npx-cli.js");
+  return existsSync(npxCli) ? { file: process.execPath, pre: [npxCli] } : null;
+}
+
 function cli(args) {
   const common = { encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
                    env: { ...env, LABELIXA_API_URL: apiUrl } };
   if (env.LABELIXA_CLI_PATH) {
     return spawnSync(process.execPath, [env.LABELIXA_CLI_PATH, ...args], common);
   }
-  const npx = process.platform === "win32" ? "npx.cmd" : "npx";
-  return spawnSync(npx, ["--yes", `labelixa@${cliVersion}`, ...args],
-                   { ...common, shell: process.platform === "win32" });
+  if (!CLI_VERSION_RE.test(cliVersion)) {
+    return { error: new Error(`cli-version must be a version or range, got '${cliVersion}'`) };
+  }
+  const npx = npxCommand();
+  if (!npx) return { error: new Error("npx was not found next to the Node binary") };
+  return spawnSync(npx.file, [...npx.pre, "--yes", `labelixa@${cliVersion}`, ...args], common);
 }
 
 function sizeArgs() {

@@ -1,6 +1,6 @@
 {
   "name": "labelixa-action",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "GitHub Action: lint and preview ZPL/EPL/TSPL/CPCL label files with the Labelixa CLI.",
   "type": "module",

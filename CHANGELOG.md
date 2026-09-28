@@ -4,7 +4,20 @@ All notable changes to the Labelixa ZPL Lint action are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
-## [1.0.0] - Unreleased
+## [1.0.1] - 2026-09-28
+
+### Changed
+- Preview links are opt-in: `previews` now defaults to `false`. A preview
+  link uploads the label content to the API and stores it as a shareable
+  snippet, so a workflow author has to ask for it with `previews: true`.
+
+### Security
+- No child process is started through a shell, on Windows either: npx is
+  run through npm's JavaScript entry point with the current Node binary,
+  so file globs and `cli-version` are passed as arguments and never parsed
+  as commands. `cli-version` must be a version or range.
+
+## [1.0.0] - 2026-09-23
 
 ### Added
 - Composite action wrapping the `labelixa` CLI: lints the given files or

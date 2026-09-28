@@ -35,9 +35,9 @@ inputs:
     required: false
     default: "true"
   previews:
-    description: "Create shareable preview links for the job summary (true/false). Needs the API's snippet feature; skipped silently when it is not available."
+    description: "Create shareable preview links for the job summary (true/false). Off by default: each label's content is uploaded to the API and stored as a shareable snippet. Needs the API's snippet feature; skipped with a note when it is not available."
     required: false
-    default: "true"
+    default: "false"
   badge:
     description: "Report the result to the Labelixa badge service so that https://labelixa.com/badge/gh/OWNER/REPO.svg shows it (true/false). Needs `permissions: id-token: write`; public repositories only."
     required: false
