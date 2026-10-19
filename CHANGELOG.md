@@ -4,6 +4,15 @@ All notable changes to the Labelixa ZPL Lint action are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] - 2026-10-19
+
+### Fixed
+- Trailing slashes in `LABELIXA_API_URL` are stripped with a loop instead
+  of the `/\/+$/` pattern, which backtracked polynomially on a long run of
+  slashes.
+- The job summary table escapes backslashes before pipes, so a backslash
+  already in a message can no longer undo the pipe escaping.
+
 ## [1.0.1] - 2026-09-28
 
 ### Changed

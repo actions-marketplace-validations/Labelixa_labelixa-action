@@ -51,7 +51,10 @@ const previews = flag("PREVIEWS", false);
 const badge = flag("BADGE", false);
 const outDir = input("OUT_DIR", "labelixa-out") || "labelixa-out";
 const cliVersion = input("CLI_VERSION", "0.3.0") || "0.3.0";
-const apiUrl = (env.LABELIXA_API_URL || "https://api.labelixa.com").replace(/\/+$/, "");
+// Trailing slashes are stripped with a loop, not /\/+$/ (polynomial
+// backtracking on a long run of slashes; the URL is workflow configuration).
+let apiUrl = env.LABELIXA_API_URL || "https://api.labelixa.com";
+while (apiUrl.endsWith("/")) apiUrl = apiUrl.slice(0, -1);
 const apiKey = env.LABELIXA_API_KEY || "";
 
 const RULES_BASE = "https://labelixa.com/zpl/rules/";
@@ -103,7 +106,10 @@ function sizeArgs() {
 
 // ---------------------------------------------------------------- summary
 function esc(s) {
-  return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\|/g, "\\|");
+  // Backslashes are escaped first; otherwise a backslash already in the
+  // text could pair with the one added before "|" and undo the escaping.
+  return String(s ?? "").replace(/\\/g, "\\\\").replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;").replace(/\|/g, "\\|");
 }
 
 function severityIcon(sev) {
